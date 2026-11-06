@@ -1,0 +1,188 @@
+Project gengbook_mvp {
+  database_type: 'PostgreSQL'
+  Note: '逻辑模型评审草案，不是已执行的迁移。配合技术选型文档使用；加密、RLS、授权函数、删除时限及锁顺序不由此文件完整表达。'
+}
+
+Table identity.principals {
+  id uuid [pk]
+  status varchar [not null, note: 'PENDING_VERIFICATION ACTIVE DELETING DELETED；匿名占位保留须评审']
+  created_at timestamptz [not null]
+}
+
+Table identity.credentials {
+  principal_id uuid [pk, ref: > identity.principals.id]
+  email_ciphertext bytea [not null]
+  email_lookup_hmac bytea [not null, unique]
+  password_hash varchar [not null, note: 'Argon2id 编码哈希，不存密码密文或明文']
+  email_verified_at timestamptz
+  Note: '邮箱密文的密钥元信息按最终加密封装补齐；注销清除凭据。'
+}
+
+Table identity.sessions {
+  id uuid [pk]
+  principal_id uuid [not null, ref: > identity.principals.id]
+  access_token_hash bytea [not null, unique]
+  expires_at timestamptz [not null]
+  revoked_at timestamptz
+  created_at timestamptz [not null]
+}
+
+Table identity.refresh_tokens {
+  id uuid [pk]
+  session_id uuid [not null, ref: > identity.sessions.id]
+  token_hash bytea [not null, unique]
+  consumed_at timestamptz
+  expires_at timestamptz [not null]
+  Note: '保留必要的已消费摘要以检测重放；期限待运行策略确定。'
+}
+
+Table identity.verification_tickets {
+  id uuid [pk]
+  principal_id uuid [not null, ref: > identity.principals.id]
+  purpose varchar [not null]
+  secret_hash bytea [not null, unique]
+  expires_at timestamptz [not null]
+  consumed_at timestamptz
+  Note: '用途区分注册验证、找回和近期身份确认；注销回执需在提交前签发并绑定预留任务标识。'
+}
+
+Table space.spaces {
+  id uuid [pk]
+  status varchar [not null, note: 'PENDING ACTIVE FROZEN']
+  version bigint [not null]
+  created_at timestamptz [not null]
+  frozen_at timestamptz
+  frozen_by uuid [ref: > identity.principals.id]
+}
+
+Table space.members {
+  space_id uuid [not null, ref: > space.spaces.id]
+  principal_id uuid [not null, ref: > identity.principals.id]
+  slot smallint [not null, note: '迁移须加 CHECK slot IN (1,2)；MVP 容量硬约束']
+  joined_at timestamptz [not null]
+  indexes {
+    (space_id, principal_id) [pk]
+    (space_id, slot) [unique]
+    principal_id
+  }
+  Note: '退出冻结不直接删除历史读取资格；主体是否有效仍需另查。'
+}
+
+Table space.invitations {
+  id uuid [pk]
+  space_id uuid [not null, ref: > space.spaces.id]
+  inviter_id uuid [not null, ref: > identity.principals.id]
+  recipient_id uuid [ref: > identity.principals.id]
+  status varchar [not null]
+  expires_at timestamptz [not null]
+  created_at timestamptz [not null]
+  Note: '仅有效接收者可接受；无匹配目标时可保留相同受理回执但 recipient_id 为空，不能加入且不泄露目录存在性。'
+}
+
+Table memory.entries {
+  id uuid [pk]
+  space_id uuid [not null, ref: > space.spaces.id]
+  author_id uuid [not null, ref: > identity.principals.id]
+  payload_ciphertext bytea [not null, note: '梗文字与背景细节经过认证加密的载荷']
+  wrapped_key bytea [not null]
+  key_version varchar [not null]
+  edit_mode varchar [not null, note: 'AUTHOR_ONLY BOTH']
+  version bigint [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  indexes {
+    (space_id, id) [unique]
+    (space_id, created_at, id)
+    author_id
+  }
+  Note: '原作者与空间归属固定。永久删除不保留可恢复旧正文。nonce 与算法等封装信息由加密适配定义。'
+}
+
+Table media.assets {
+  id uuid [pk]
+  space_id uuid [not null, ref: > space.spaces.id]
+  kind varchar [not null, note: 'MVP 仅 IMAGE']
+  state varchar [not null]
+  object_key varchar [not null]
+  object_version varchar
+  wrapped_key bytea [not null]
+  key_version varchar [not null]
+  content_type varchar [not null]
+  size_bytes bigint [not null]
+  created_at timestamptz [not null]
+  indexes {
+    (space_id, id) [unique]
+  }
+  Note: '正式对象禁止客户端覆盖；派生版本的加密引用在实现时细化；对象键不对外公开。'
+}
+
+Table media.entry_assets {
+  space_id uuid [not null]
+  entry_id uuid [not null]
+  asset_id uuid [not null]
+  position integer [not null]
+  indexes {
+    (space_id, entry_id, asset_id) [pk]
+    asset_id [unique]
+    (entry_id, position) [unique]
+  }
+  Note: '建议不跨记录共享 asset；删除归属随所属记录的最初作者，不随上传者。'
+}
+Ref: media.entry_assets.(space_id, entry_id) > memory.entries.(space_id, id)
+Ref: media.entry_assets.(space_id, asset_id) > media.assets.(space_id, id)
+
+Table media.uploads {
+  id uuid [pk]
+  space_id uuid [not null, ref: > space.spaces.id]
+  requester_id uuid [not null, ref: > identity.principals.id]
+  target_entry_id uuid
+  new_entry_request_id uuid
+  expected_entry_version bigint
+  state varchar [not null]
+  staging_reference varchar
+  asset_id uuid [ref: > media.assets.id]
+  expires_at timestamptz [not null]
+  Note: '迁移和用例校验编辑目标与新建请求二选一；目标记录允许删除后置空清理，不能因该外键阻断永久删除。'
+}
+
+Table ops.idempotency {
+  id uuid [pk]
+  requester_id uuid [not null, ref: > identity.principals.id]
+  operation varchar [not null]
+  target_scope varchar [not null]
+  request_key varchar [not null]
+  request_hash bytea [not null]
+  result_reference uuid
+  result_status integer
+  expires_at timestamptz [not null]
+  indexes {
+    (requester_id, operation, target_scope, request_key) [unique]
+  }
+  Note: '不保存完整私密响应；删除或注销后不可重放旧内容。'
+}
+
+Table ops.deletion_operations {
+  id uuid [pk]
+  requester_id uuid [not null, ref: > identity.principals.id]
+  scope varchar [not null, note: 'ENTRY ACCOUNT']
+  target_id uuid [not null]
+  status varchar [not null]
+  receipt_hash bytea
+  online_access_revoked boolean [not null]
+  backup_purge_state varchar [not null]
+  created_at timestamptz [not null]
+  updated_at timestamptz [not null]
+  Note: '任务仅含清理所需最少引用；目标可能已经删除，故不把 target_id 做阻断性外键。'
+}
+
+Table ops.outbox {
+  id uuid [pk]
+  event_type varchar [not null]
+  resource_id uuid [not null]
+  aggregate_version bigint
+  status varchar [not null]
+  attempts integer [not null]
+  available_at timestamptz [not null]
+  created_at timestamptz [not null]
+  Note: '不存正文、图片或有效秘密；重试有边界，关键业务先同步生效。'
+}
