@@ -1,0 +1,6 @@
+*
+!bootstrap/
+bootstrap/*
+!bootstrap/target/
+bootstrap/target/*
+!bootstrap/target/geng-backend-0.1.0-SNAPSHOT.jar

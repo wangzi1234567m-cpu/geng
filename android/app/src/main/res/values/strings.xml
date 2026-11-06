@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">考梗记</string>
+    <string name="bootstrap_subtitle">记录只有你们懂的梗</string>
+    <string name="bootstrap_status">开发环境验证页</string>
+    <string name="connection_not_checked">尚未检查后端连接</string>
+    <string name="connection_checking">正在检查连接…</string>
+    <string name="connection_reachable">基础服务连接正常</string>
+    <string name="connection_unreachable">暂时无法连接基础服务</string>
+    <string name="connection_check">检查后端连接</string>
+    <string name="connection_scope">仅用于开发诊断，连接成功不代表数据库或业务功能已经就绪。</string>
+</resources>

@@ -1,0 +1,17 @@
+{
+  "name": "kaogengji-engineering-checks",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "check": "node tools/check-source.mjs && redocly lint contracts/openapi.draft.json",
+    "format:check": "prettier --check package.json package-lock.json .github/workflows/ci.yml redocly.yaml contracts/openapi.draft.json"
+  },
+  "devDependencies": {
+    "@redocly/cli": "2.76.0",
+    "prettier": "3.6.2"
+  }
+}

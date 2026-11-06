@@ -1,0 +1,9 @@
+extends:
+  - minimal
+rules:
+  no-unresolved-refs: error
+  struct: error
+  operation-operationId-unique: error
+  security-defined: error
+  # Design contract: capacity limits remain explicitly undecided.
+  operation-4xx-response: error

@@ -1,0 +1,10 @@
+[
+  {
+    "name": "V1__create_module_schemas.sql",
+    "sha256": "ae2bfa096b56d282eb4a987b4b6efa8c86ca6c56417dc90673b1338b92bb6c40"
+  },
+  {
+    "name": "V2__core_module_foundation.sql",
+    "sha256": "b1a88176a0607cda9ac702ec89230da8cb7c2270d5c97e791b84caebf7478b2e"
+  }
+]

@@ -1,0 +1,41 @@
+name: geng-dev
+services:
+  postgres:
+    image: postgres:17.11@sha256:748a18a54d3842d43bc156f0840d78029b8d349e0feca98c12b9c4ce3404a6b3
+    environment:
+      POSTGRES_DB: geng_dev
+      POSTGRES_USER: geng_admin
+      POSTGRES_PASSWORD: ${GENG_DB_ADMIN_PASSWORD:?Run tools/Initialize-DevEnvironment.ps1}
+      GENG_APP_PASSWORD: ${GENG_DB_PASSWORD:?Missing app password}
+      GENG_MIGRATION_PASSWORD: ${GENG_MIGRATION_PASSWORD:?Missing migration password}
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - geng-postgres:/var/lib/postgresql/data
+      - ./postgres/10-roles.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
+      - ./postgres/bootstrap.sql:/docker-entrypoint-initdb.d/bootstrap.sql.inc:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U geng_admin -d geng_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  backend:
+    profiles: ["app"]
+    build:
+      context: ../backend
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SERVER_ADDRESS: 0.0.0.0
+      GENG_DB_URL: jdbc:postgresql://postgres:5432/geng_dev
+      GENG_DB_PASSWORD: ${GENG_DB_PASSWORD:?Missing app password}
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  geng-postgres:

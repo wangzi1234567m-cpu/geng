@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.1",
   "info": {
-    "title": "双人梗簿 API 评审草案",
+    "title": "考梗记 API 评审草案",
     "version": "0.1.0-draft",
     "description": "技术建议契约，不是已部署 API。与技术选型与API数据库契约设计_v0.1.md 配套。所有路径默认需有效会话，资源仍逐次授权；待定容量等不得当作无限制。"
   },
@@ -18,34 +18,39 @@
   ],
   "tags": [
     {
-      "name": "Auth"
+      "name": "Auth",
+      "description": "邮箱认证与会话"
     },
     {
-      "name": "Identity"
+      "name": "Identity",
+      "description": "当前账号资料"
     },
     {
-      "name": "Spaces"
+      "name": "Spaces",
+      "description": "双人空间"
     },
     {
-      "name": "Invitations"
+      "name": "Invitations",
+      "description": "朋友邀请"
     },
     {
-      "name": "Entries"
+      "name": "Entries",
+      "description": "梗记录"
     },
     {
-      "name": "Media"
+      "name": "Media",
+      "description": "私密图片"
     },
     {
-      "name": "Deletion"
+      "name": "Deletion",
+      "description": "永久清除进度"
     }
   ],
   "paths": {
     "/auth/registrations": {
       "post": {
         "operationId": "register",
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "接收注册请求",
         "requestBody": {
           "required": true,
@@ -175,9 +180,7 @@
     "/auth/email-verifications": {
       "post": {
         "operationId": "verifyEmail",
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "验证邮箱",
         "requestBody": {
           "required": true,
@@ -300,9 +303,7 @@
     "/auth/email-verifications/resend": {
       "post": {
         "operationId": "resendVerification",
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "接收验证邮件重发请求",
         "requestBody": {
           "required": true,
@@ -432,9 +433,7 @@
     "/auth/sessions": {
       "post": {
         "operationId": "login",
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "邮箱密码登录",
         "description": "仅已验证邮箱且状态有效的账号可获业务会话；凭据失败使用统一响应。",
         "requestBody": {
@@ -565,9 +564,7 @@
     "/auth/sessions/refresh": {
       "post": {
         "operationId": "refreshSession",
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "轮换会话令牌",
         "description": "刷新令牌单次使用；检测到重放撤销对应会话族。",
         "requestBody": {
@@ -698,9 +695,7 @@
     "/auth/sessions/current": {
       "delete": {
         "operationId": "logout",
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "撤销当前会话",
         "responses": {
           "204": {
@@ -812,9 +807,7 @@
     "/auth/password-reset-requests": {
       "post": {
         "operationId": "requestPasswordReset",
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "接收密码找回请求",
         "requestBody": {
           "required": true,
@@ -944,9 +937,7 @@
     "/auth/password-resets": {
       "post": {
         "operationId": "resetPassword",
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "使用一次性凭据更新密码",
         "description": "成功后撤销旧会话；凭据不可复用。此流程为安全生命周期建议。",
         "requestBody": {
@@ -1070,9 +1061,7 @@
     "/auth/reauthentications": {
       "post": {
         "operationId": "reauthenticate",
-        "tags": [
-          "Auth"
-        ],
+        "tags": ["Auth"],
         "summary": "敏感操作近期身份确认",
         "description": "对注销用途预留 operationId 并先签发秘密回执，客户端保存后再提交注销；避免提交响应丢失且会话已撤销后无法查进度。未实际提交注销时回执不提供内容权限。",
         "requestBody": {
@@ -1202,9 +1191,7 @@
     "/me": {
       "get": {
         "operationId": "getMe",
-        "tags": [
-          "Identity"
-        ],
+        "tags": ["Identity"],
         "summary": "获取自己的账号资料",
         "responses": {
           "200": {
@@ -1323,9 +1310,7 @@
     "/spaces": {
       "post": {
         "operationId": "createSpace",
-        "tags": [
-          "Spaces"
-        ],
+        "tags": ["Spaces"],
         "summary": "创建待加入双人空间",
         "parameters": [
           {
@@ -1457,9 +1442,7 @@
       },
       "get": {
         "operationId": "listSpaces",
-        "tags": [
-          "Spaces"
-        ],
+        "tags": ["Spaces"],
         "summary": "列出自己的空间",
         "parameters": [
           {
@@ -1586,9 +1569,7 @@
     "/spaces/{spaceId}": {
       "get": {
         "operationId": "getSpace",
-        "tags": [
-          "Spaces"
-        ],
+        "tags": ["Spaces"],
         "summary": "读取自己的空间",
         "parameters": [
           {
@@ -1712,9 +1693,7 @@
     "/spaces/{spaceId}/invitations": {
       "post": {
         "operationId": "inviteUser",
-        "tags": [
-          "Invitations"
-        ],
+        "tags": ["Invitations"],
         "summary": "按邮箱或用户 ID 发起邀请请求",
         "description": "两种标识互斥。仅实际已注册且验证邮箱者可收到邀请；所有符合请求格式的目标均返回同类受理回执，不暴露是否存在或已送达。无实际接收者的回执不可接受加入，发起者仍可撤销。待处理时不授予内容访问。",
         "parameters": [
@@ -1847,18 +1826,13 @@
             }
           }
         },
-        "x-pending-decisions": [
-          "邀请期限及频率配置",
-          "拒绝后能否再次邀请"
-        ]
+        "x-pending-decisions": ["邀请期限及频率配置", "拒绝后能否再次邀请"]
       }
     },
     "/me/invitations": {
       "get": {
         "operationId": "listReceivedInvitations",
-        "tags": [
-          "Invitations"
-        ],
+        "tags": ["Invitations"],
         "summary": "读取自己收到的邀请",
         "parameters": [
           {
@@ -1985,9 +1959,7 @@
     "/invitations/{invitationId}/accept": {
       "post": {
         "operationId": "acceptInvitation",
-        "tags": [
-          "Invitations"
-        ],
+        "tags": ["Invitations"],
         "summary": "确认加入邀请空间",
         "description": "验证当前用户与接收者一致，重新核验邀请、空间容量及双方账号状态；并发时也不超过两位成员。",
         "parameters": [
@@ -2115,9 +2087,7 @@
     "/invitations/{invitationId}/reject": {
       "post": {
         "operationId": "rejectInvitation",
-        "tags": [
-          "Invitations"
-        ],
+        "tags": ["Invitations"],
         "summary": "拒绝自己的邀请",
         "parameters": [
           {
@@ -2244,9 +2214,7 @@
     "/invitations/{invitationId}/revoke": {
       "post": {
         "operationId": "revokeInvitation",
-        "tags": [
-          "Invitations"
-        ],
+        "tags": ["Invitations"],
         "summary": "邀请方撤销待处理邀请",
         "parameters": [
           {
@@ -2373,9 +2341,7 @@
     "/spaces/{spaceId}/exit": {
       "post": {
         "operationId": "exitSpace",
-        "tags": [
-          "Spaces"
-        ],
+        "tags": ["Spaces"],
         "summary": "退出并冻结整个空间",
         "description": "原双方保留历史读取资格；正常写入停止；注销清除是明确例外。",
         "parameters": [
@@ -2513,9 +2479,7 @@
     "/spaces/{spaceId}/entries": {
       "get": {
         "operationId": "listEntries",
-        "tags": [
-          "Entries"
-        ],
+        "tags": ["Entries"],
         "summary": "分页读取空间中的梗",
         "parameters": [
           {
@@ -2643,9 +2607,7 @@
       },
       "post": {
         "operationId": "createEntry",
-        "tags": [
-          "Entries"
-        ],
+        "tags": ["Entries"],
         "summary": "发布一个梗",
         "description": "初始 editMode 固定为 AUTHOR_ONLY。图片必须准备完成且属于当前请求和空间；requestId 绑定新建记录附件。",
         "parameters": [
@@ -2788,9 +2750,7 @@
     "/spaces/{spaceId}/entries/{entryId}": {
       "get": {
         "operationId": "getEntry",
-        "tags": [
-          "Entries"
-        ],
+        "tags": ["Entries"],
         "summary": "读取一个梗",
         "parameters": [
           {
@@ -2915,9 +2875,7 @@
       },
       "put": {
         "operationId": "replaceEntry",
-        "tags": [
-          "Entries"
-        ],
+        "tags": ["Entries"],
         "summary": "手动完整保存梗及附件列表",
         "description": "当前版本不符返回 409 ENTRY_VERSION_CONFLICT；原作者可编辑，BOTH 时另一成员可编辑。冻结后拒绝。请求不能修改原作者、空间或编辑模式。",
         "parameters": [
@@ -3053,9 +3011,7 @@
       },
       "delete": {
         "operationId": "deleteEntry",
-        "tags": [
-          "Entries"
-        ],
+        "tags": ["Entries"],
         "summary": "永久删除梗并建立资源清除任务",
         "description": "普通冻结空间不可调用；正常编辑权限包含删除权限。在线访问撤销不等于备份瞬间物理擦除。",
         "parameters": [
@@ -3189,9 +3145,7 @@
     "/spaces/{spaceId}/entries/{entryId}/permissions": {
       "put": {
         "operationId": "changeEntryPermissions",
-        "tags": [
-          "Entries"
-        ],
+        "tags": ["Entries"],
         "summary": "原作者切换共同编辑模式",
         "description": "只有最初作者允许调用，BOTH 不赋予另一方切换模式的权限；与内容保存共用记录版本。",
         "parameters": [
@@ -3329,9 +3283,7 @@
     "/spaces/{spaceId}/uploads": {
       "post": {
         "operationId": "initializeUpload",
-        "tags": [
-          "Media"
-        ],
+        "tags": ["Media"],
         "summary": "初始化受控图片上传",
         "parameters": [
           {
@@ -3468,9 +3420,7 @@
     "/spaces/{spaceId}/uploads/{uploadId}/content": {
       "put": {
         "operationId": "putUploadContent",
-        "tags": [
-          "Media"
-        ],
+        "tags": ["Media"],
         "summary": "流式提交图片二进制",
         "description": "与初始化的上传者、空间和类型绑定；请求不能覆盖已发布资源。服务端以实际解码结果核验类型。",
         "parameters": [
@@ -3609,9 +3559,7 @@
     "/spaces/{spaceId}/uploads/{uploadId}/complete": {
       "post": {
         "operationId": "completeUpload",
-        "tags": [
-          "Media"
-        ],
+        "tags": ["Media"],
         "summary": "提交媒体处理并返回资源状态",
         "description": "可能处于 PROCESSING；仅 READY 资源可最终关联。完成处理本身不代表记录已发布。",
         "parameters": [
@@ -3752,9 +3700,7 @@
     "/spaces/{spaceId}/assets/{assetId}": {
       "get": {
         "operationId": "getAsset",
-        "tags": [
-          "Media"
-        ],
+        "tags": ["Media"],
         "summary": "读取自己的暂存资源或已发布附件状态",
         "description": "未关联资源仅相应上传者可见；已关联资源需有记录读取资格。",
         "parameters": [
@@ -3882,9 +3828,7 @@
     "/spaces/{spaceId}/assets/{assetId}/content": {
       "get": {
         "operationId": "readAssetContent",
-        "tags": [
-          "Media"
-        ],
+        "tags": ["Media"],
         "summary": "授权后流式读取图片",
         "description": "每次校验资源所属空间、记录和当前可见性；不返回公共地址；私密响应不进入共享缓存。",
         "parameters": [
@@ -4021,9 +3965,7 @@
     "/me/deletion-requests": {
       "post": {
         "operationId": "deleteAccount",
-        "tags": [
-          "Deletion"
-        ],
+        "tags": ["Deletion"],
         "summary": "注销账号并提交永久清除",
         "description": "必须先保存近期身份确认时取得的回执。在统一边界撤销会话、冻结相关活动空间并阻止原作者内容继续读取；删除最初创建的梗和附图，保留另一方创建内容。提交后旧会话失效，即使响应丢失也使用事先保存的回执查询本次任务。",
         "parameters": [
@@ -4158,9 +4100,7 @@
     "/deletion-operations/{operationId}": {
       "get": {
         "operationId": "getDeletionOperation",
-        "tags": [
-          "Deletion"
-        ],
+        "tags": ["Deletion"],
         "summary": "读取本次清除进度",
         "description": "有效登录者只能查自己发起的任务；注销后用秘密回执仅查该任务最小进度，不能凭公开 ID 查询。",
         "parameters": [
@@ -4438,13 +4378,7 @@
             }
           }
         },
-        "required": [
-          "type",
-          "title",
-          "status",
-          "code",
-          "requestId"
-        ]
+        "required": ["type", "title", "status", "code", "requestId"]
       },
       "Accepted": {
         "type": "object",
@@ -4454,9 +4388,7 @@
             "description": "统一受理提示，不证明邮箱或用户是否存在"
           }
         },
-        "required": [
-          "message"
-        ]
+        "required": ["message"]
       },
       "RegistrationRequest": {
         "type": "object",
@@ -4470,10 +4402,7 @@
             "writeOnly": true
           }
         },
-        "required": [
-          "email",
-          "password"
-        ],
+        "required": ["email", "password"],
         "additionalProperties": false
       },
       "EmailRequest": {
@@ -4484,9 +4413,7 @@
             "format": "email"
           }
         },
-        "required": [
-          "email"
-        ],
+        "required": ["email"],
         "additionalProperties": false
       },
       "SecretRequest": {
@@ -4497,9 +4424,7 @@
             "writeOnly": true
           }
         },
-        "required": [
-          "token"
-        ],
+        "required": ["token"],
         "additionalProperties": false
       },
       "ResetPasswordRequest": {
@@ -4514,10 +4439,7 @@
             "writeOnly": true
           }
         },
-        "required": [
-          "token",
-          "newPassword"
-        ],
+        "required": ["token", "newPassword"],
         "additionalProperties": false
       },
       "RefreshRequest": {
@@ -4528,9 +4450,7 @@
             "writeOnly": true
           }
         },
-        "required": [
-          "refreshToken"
-        ],
+        "required": ["refreshToken"],
         "additionalProperties": false
       },
       "Session": {
@@ -4552,12 +4472,7 @@
             "format": "date-time"
           }
         },
-        "required": [
-          "accessToken",
-          "refreshToken",
-          "tokenType",
-          "expiresAt"
-        ]
+        "required": ["accessToken", "refreshToken", "tokenType", "expiresAt"]
       },
       "ReauthenticateRequest": {
         "type": "object",
@@ -4568,15 +4483,10 @@
           },
           "purpose": {
             "type": "string",
-            "enum": [
-              "ACCOUNT_DELETION"
-            ]
+            "enum": ["ACCOUNT_DELETION"]
           }
         },
-        "required": [
-          "password",
-          "purpose"
-        ],
+        "required": ["password", "purpose"],
         "additionalProperties": false
       },
       "Reauthentication": {
@@ -4601,17 +4511,10 @@
                 "description": "提交注销前先安全保存；只用于查询预留清除任务"
               }
             },
-            "required": [
-              "operationId",
-              "receiptToken"
-            ]
+            "required": ["operationId", "receiptToken"]
           }
         },
-        "required": [
-          "reauthenticationToken",
-          "expiresAt",
-          "deletionReceipt"
-        ]
+        "required": ["reauthenticationToken", "expiresAt", "deletionReceipt"]
       },
       "Me": {
         "type": "object",
@@ -4628,11 +4531,7 @@
             "type": "boolean"
           }
         },
-        "required": [
-          "id",
-          "email",
-          "emailVerified"
-        ]
+        "required": ["id", "email", "emailVerified"]
       },
       "Member": {
         "type": "object",
@@ -4643,16 +4542,10 @@
           },
           "accountStatus": {
             "type": "string",
-            "enum": [
-              "ACTIVE",
-              "DELETED"
-            ]
+            "enum": ["ACTIVE", "DELETED"]
           }
         },
-        "required": [
-          "userId",
-          "accountStatus"
-        ]
+        "required": ["userId", "accountStatus"]
       },
       "Space": {
         "type": "object",
@@ -4663,11 +4556,7 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "PENDING",
-              "ACTIVE",
-              "FROZEN"
-            ]
+            "enum": ["PENDING", "ACTIVE", "FROZEN"]
           },
           "version": {
             "type": "integer",
@@ -4685,10 +4574,7 @@
             "format": "date-time"
           },
           "frozenAt": {
-            "type": [
-              "string",
-              "null"
-            ],
+            "type": ["string", "null"],
             "format": "date-time"
           }
         },
@@ -4716,16 +4602,10 @@
             }
           },
           "nextCursor": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         },
-        "required": [
-          "items",
-          "nextCursor"
-        ]
+        "required": ["items", "nextCursor"]
       },
       "InviteByEmail": {
         "type": "object",
@@ -4735,9 +4615,7 @@
             "format": "email"
           }
         },
-        "required": [
-          "email"
-        ],
+        "required": ["email"],
         "additionalProperties": false
       },
       "InviteByUserId": {
@@ -4748,9 +4626,7 @@
             "format": "uuid"
           }
         },
-        "required": [
-          "userId"
-        ],
+        "required": ["userId"],
         "additionalProperties": false
       },
       "InvitationTarget": {
@@ -4775,10 +4651,7 @@
             "description": "只证明邀请请求已受理，不证明账号存在或已送达"
           }
         },
-        "required": [
-          "id",
-          "message"
-        ]
+        "required": ["id", "message"]
       },
       "Invitation": {
         "type": "object",
@@ -4797,26 +4670,14 @@
           },
           "status": {
             "type": "string",
-            "enum": [
-              "PENDING",
-              "ACCEPTED",
-              "REJECTED",
-              "REVOKED",
-              "EXPIRED"
-            ]
+            "enum": ["PENDING", "ACCEPTED", "REJECTED", "REVOKED", "EXPIRED"]
           },
           "expiresAt": {
             "type": "string",
             "format": "date-time"
           }
         },
-        "required": [
-          "id",
-          "spaceId",
-          "inviterId",
-          "status",
-          "expiresAt"
-        ]
+        "required": ["id", "spaceId", "inviterId", "status", "expiresAt"]
       },
       "InvitationPage": {
         "type": "object",
@@ -4828,16 +4689,10 @@
             }
           },
           "nextCursor": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         },
-        "required": [
-          "items",
-          "nextCursor"
-        ]
+        "required": ["items", "nextCursor"]
       },
       "ExitRequest": {
         "type": "object",
@@ -4857,18 +4712,11 @@
           },
           "kind": {
             "type": "string",
-            "enum": [
-              "IMAGE"
-            ]
+            "enum": ["IMAGE"]
           },
           "state": {
             "type": "string",
-            "enum": [
-              "PROCESSING",
-              "READY",
-              "FAILED",
-              "PURGING"
-            ]
+            "enum": ["PROCESSING", "READY", "FAILED", "PURGING"]
           },
           "contentType": {
             "type": "string"
@@ -4879,12 +4727,7 @@
             "minimum": 0
           }
         },
-        "required": [
-          "id",
-          "spaceId",
-          "kind",
-          "state"
-        ]
+        "required": ["id", "spaceId", "kind", "state"]
       },
       "Entry": {
         "type": "object",
@@ -4909,10 +4752,7 @@
           },
           "editMode": {
             "type": "string",
-            "enum": [
-              "AUTHOR_ONLY",
-              "BOTH"
-            ]
+            "enum": ["AUTHOR_ONLY", "BOTH"]
           },
           "version": {
             "type": "integer",
@@ -4957,16 +4797,10 @@
             }
           },
           "nextCursor": {
-            "type": [
-              "string",
-              "null"
-            ]
+            "type": ["string", "null"]
           }
         },
-        "required": [
-          "items",
-          "nextCursor"
-        ]
+        "required": ["items", "nextCursor"]
       },
       "CreateEntryRequest": {
         "type": "object",
@@ -4990,11 +4824,7 @@
             }
           }
         },
-        "required": [
-          "requestId",
-          "phrase",
-          "assetIds"
-        ],
+        "required": ["requestId", "phrase", "assetIds"],
         "additionalProperties": false
       },
       "ReplaceEntryRequest": {
@@ -5020,11 +4850,7 @@
             }
           }
         },
-        "required": [
-          "expectedVersion",
-          "phrase",
-          "assetIds"
-        ],
+        "required": ["expectedVersion", "phrase", "assetIds"],
         "additionalProperties": false
       },
       "ChangePermissionsRequest": {
@@ -5037,16 +4863,10 @@
           },
           "editMode": {
             "type": "string",
-            "enum": [
-              "AUTHOR_ONLY",
-              "BOTH"
-            ]
+            "enum": ["AUTHOR_ONLY", "BOTH"]
           }
         },
-        "required": [
-          "expectedVersion",
-          "editMode"
-        ],
+        "required": ["expectedVersion", "editMode"],
         "additionalProperties": false
       },
       "UploadForNewEntry": {
@@ -5054,9 +4874,7 @@
         "properties": {
           "kind": {
             "type": "string",
-            "enum": [
-              "IMAGE"
-            ]
+            "enum": ["IMAGE"]
           },
           "purpose": {
             "const": "NEW_ENTRY"
@@ -5088,9 +4906,7 @@
         "properties": {
           "kind": {
             "type": "string",
-            "enum": [
-              "IMAGE"
-            ]
+            "enum": ["IMAGE"]
           },
           "purpose": {
             "const": "ENTRY_EDIT"
@@ -5161,12 +4977,7 @@
             "format": "date-time"
           }
         },
-        "required": [
-          "id",
-          "spaceId",
-          "state",
-          "expiresAt"
-        ]
+        "required": ["id", "spaceId", "state", "expiresAt"]
       },
       "CompleteUploadRequest": {
         "type": "object",
@@ -5181,9 +4992,7 @@
             "writeOnly": true
           }
         },
-        "required": [
-          "reauthenticationToken"
-        ],
+        "required": ["reauthenticationToken"],
         "additionalProperties": false
       },
       "DeletionOperation": {
@@ -5195,28 +5004,18 @@
           },
           "scope": {
             "type": "string",
-            "enum": [
-              "ENTRY",
-              "ACCOUNT"
-            ]
+            "enum": ["ENTRY", "ACCOUNT"]
           },
           "status": {
             "type": "string",
-            "enum": [
-              "PROCESSING",
-              "COMPLETED",
-              "NEEDS_ATTENTION"
-            ]
+            "enum": ["PROCESSING", "COMPLETED", "NEEDS_ATTENTION"]
           },
           "onlineAccessRevoked": {
             "type": "boolean"
           },
           "backupPurgeState": {
             "type": "string",
-            "enum": [
-              "PENDING",
-              "COMPLETED"
-            ]
+            "enum": ["PENDING", "COMPLETED"]
           },
           "createdAt": {
             "type": "string",
@@ -5239,9 +5038,7 @@
             "$ref": "#/components/schemas/DeletionOperation"
           }
         },
-        "required": [
-          "operation"
-        ]
+        "required": ["operation"]
       }
     }
   },

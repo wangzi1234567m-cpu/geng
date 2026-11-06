@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: geng-backend
+  profiles:
+    default: bootstrap
+  flyway:
+    enabled: false
+  mvc:
+    log-request-details: false
+logging:
+  pattern:
+    level: "%5p [requestId=%X{requestId:-}]"
+server:
+  address: 127.0.0.1
+  port: 8080
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
