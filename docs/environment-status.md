@@ -1,6 +1,6 @@
 # 开发环境与第一阶段验证记录
 
-验证日期：2026年11月6日。分支：feat/project-foundation。此记录描述本机结果，不代表产品业务功能已经实现。
+验证日期：2026年11月6日。分支：codex/foundation-modules。此记录描述本机结果，不代表产品业务功能已经实现。
 
 ## 已通过
 
@@ -33,7 +33,7 @@ Windows 中文 Gradle 缓存路径曾导致 Java 测试 worker 无法加载；�
 - **事务和隔离已验证**：独立应用、迁移、管理员角色；同连接事务局部 actor，提交及回滚均清除；真实只读禁写、回滚、嵌套身份拒绝、三账号跨空间隔离、冻结策略和容量约束测试通过。产品写权限尚未开放。
 - **数据库重启已验证**：专属测试表中的提交数据、角色和迁移 v2 在实际停止、重启后保留，测试表已清除。
 - **工程检查已验证**：`Verify-Foundation.ps1 -Full` 整套通过；Gitleaks 工作树快照与历史无发现；OpenAPI 32 个设计操作、Prettier 和 actionlint 通过；OSV 实际解析后端 110、Android 125、npm 2 项依赖，无已知漏洞报告；npm audit 零发现。
-- **Git 与干净检出**：本地提交、干净检出构建与合并演练继续执行，完成结果补记到阶段验收表。
+- **Git 与干净检出已验证**：实现提交 `86186fe` 位于 `codex/foundation-modules`。独立克隆后在隔离分支完成无冲突合并，合并树与实现提交一致，源仓库 main 未改动；干净检出后端 verify、Android 8 项单元测试、APK、lint 全部通过，构建后无已跟踪文件变更。复用已验证工具及依赖缓存，没有复用编译产物。
 - **远程验收待确认**：GitHub 查询证实仓库为 public。CI、代码和设计资料在公开上传范围确认前暂不推送；CI 已配置三任务和真实数据库、审计、镜像构建，actionlint 通过不等于远程运行通过。分支规则模板 `.github/rulesets/main.json` 尚未启用。
 - **Docker 仍暂缓**：用户明确暂缓本机 Docker 排障。容器镜像构建和重建数据保留仍需实际执行，不能用原生 PostgreSQL 重启替代容器验收。
 - **后续产品阶段**：Android Studio/模拟器/真机、真实邮箱账号、正文加密/KMS、对象存储、正式业务页面、冻结并发和永久清除闭环仍未交付；它们属于阶段 2 及之后。
@@ -45,7 +45,7 @@ Windows 中文 Gradle 缓存路径曾导致 Java 测试 worker 无法加载；�
 ```powershell
 ./tools/Check-DevEnvironment.ps1
 ./tools/Verify-Foundation.ps1 -Full
-./tools/Start-DevBackend.ps1 -Profile bootstrap
+./tools/Start-DevBackend.ps1 -Profile local
 ```
 
 Android 输出为 `android/app/build/outputs/apk/debug/app-debug.apk`，属于调试包。完整说明见 [development.md](development.md)。
