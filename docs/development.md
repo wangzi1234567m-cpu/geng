@@ -136,9 +136,9 @@ docker compose --env-file .dev/local.env -f deploy/compose.dev.yml stop
 
 ## CI 与版本管理
 
-`.github/workflows/ci.yml` 提供后端构建测试和 Android 构建 lint 两个任务，Action 使用固定提交且只读仓库权限。该配置尚未推送执行，不声称 GitHub CI 已通过。
+`.github/workflows/ci.yml` 提供质量检查、后端和 Android 三个任务。后端在 Compose 中执行 PostgreSQL 测试和容器重建验收。Android 从 Google 官方仓库安装经校验的固定 SDK 工具，再执行构建、测试和 lint。三个任务均已通过 GitHub Actions 验收。 [验收运行](https://github.com/wangzi1234567m-cpu/geng/actions/runs/42442037991)
 
-当前使用功能分支开发；没有自动提交、推送、创建 PR、修改远程保护规则或发布 APK。`.gitignore` 排除工具包、缓存、真实本地配置和构建产物，Wrapper 和迁移源文件应提交。
+工程基础通过功能分支提交草稿 PR，分支保护模板位于 `.github/rulesets/main.json`。`.gitignore` 排除工具包、缓存、真实本地配置和构建产物，Wrapper 和迁移源文件纳入版本控制。 [草稿 PR #1](https://github.com/wangzi1234567m-cpu/geng/pull/1)
 
 ## 环境验收与剩余项
 

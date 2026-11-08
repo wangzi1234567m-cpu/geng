@@ -34,8 +34,9 @@ Windows 中文 Gradle 缓存路径曾导致 Java 测试 worker 无法加载；�
 - **数据库重启已验证**：专属测试表中的提交数据、角色和迁移 v2 在实际停止、重启后保留，测试表已清除。
 - **工程检查已验证**：`Verify-Foundation.ps1 -Full` 整套通过；Gitleaks 工作树快照与历史无发现；OpenAPI 32 个设计操作、Prettier 和 actionlint 通过；OSV 实际解析后端 110、Android 125、npm 2 项依赖，无已知漏洞报告；npm audit 零发现。
 - **Git 与干净检出已验证**：实现提交 `86186fe` 位于 `codex/foundation-modules`。独立克隆后在隔离分支完成无冲突合并，合并树与实现提交一致，源仓库 main 未改动；干净检出后端 verify、Android 8 项单元测试、APK、lint 全部通过，构建后无已跟踪文件变更。复用已验证工具及依赖缓存，没有复用编译产物。
-- **远程验收待确认**：GitHub 查询证实仓库为 public。CI、代码和设计资料在公开上传范围确认前暂不推送；CI 已配置三任务和真实数据库、审计、镜像构建，actionlint 通过不等于远程运行通过。分支规则模板 `.github/rulesets/main.json` 尚未启用。
-- **Docker 仍暂缓**：用户明确暂缓本机 Docker 排障。容器镜像构建和重建数据保留仍需实际执行，不能用原生 PostgreSQL 重启替代容器验收。
+- **远程 CI 已通过**。功能分支已按授权公开上传，质量、后端和 Android 三项通过。 [草稿 PR #1](https://github.com/wangzi1234567m-cpu/geng/pull/1) · [验收运行](https://github.com/wangzi1234567m-cpu/geng/actions/runs/42442037991)
+- **容器已在 CI 验收**。Compose 构建并启动应用，重建 PostgreSQL 容器后迁移记录保留，应用恢复健康。本机 Docker 排障继续暂缓。
+- **分支保护待授权**。只读检查显示 `main` 未受保护。规则模板位于 `.github/rulesets/main.json`。
 - **后续产品阶段**：Android Studio/模拟器/真机、真实邮箱账号、正文加密/KMS、对象存储、正式业务页面、冻结并发和永久清除闭环仍未交付；它们属于阶段 2 及之后。
 
 实际业务边界见 `modules.md`，本轮验收表见 `phase1-acceptance.md`。不将本地架构完成等同于首版产品可试用。

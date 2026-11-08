@@ -14,15 +14,16 @@
 | 契约与格式 | Redocly 校验 32 个设计操作、引用、唯一 ID、结构和错误契约；Prettier 检查工程 JSON/YAML；迁移摘要检查 |
 | 秘密检查 | Gitleaks 检查可提交文件快照及已有历史，无发现；不扫描后上传真实配置，真实配置始终被排除 |
 | 依赖审计 | Maven SBOM 110、Android 锁文件 125、npm 锁文件 2 项依赖被 OSV 实际解析，未发现已知漏洞；npm audit 零发现。这不是未来始终无漏洞的保证 |
-| CI 配置 | actionlint 验证通过；三个任务 quality、backend、android，包含真实 PG 与镜像构建；远程尚未执行 |
+| 远程 CI | GitHub Actions 的 quality、backend、android 三项通过。后端用 Compose 构建并启动应用，验证 PostgreSQL 容器重建后迁移记录仍在且健康检查恢复。 [验收运行](https://github.com/wangzi1234567m-cpu/geng/actions/runs/42442037991) |
 | 本地重启与干净检出 | PostgreSQL 实际重启保留提交数据与迁移；独立克隆实现提交 86186fe，无编译产物的后端与 Android 构建、测试、lint 均通过，构建后工作树无已跟踪变更 |
-| Git 交付 | 本地实现提交 86186fe；隔离克隆中完成合并演练，结果树一致，源 main 保持原样；功能分支 codex/foundation-modules，远程公开上传范围尚需确认 |
+| Git 交付 | 本地实现提交 `86186fe`。隔离克隆中完成合并演练，结果树一致。功能分支 `codex/foundation-modules` 已按授权公开上传。 [草稿 PR #1](https://github.com/wangzi1234567m-cpu/geng/pull/1) |
+| 分支保护 | 只读检查确认 `main` 尚未受保护。规则模板已准备，启用须单独授权。 |
 
 ## 交付边界
 
 第一阶段基础模块包含可执行工程、访问策略、事务入口与真实存储验证，不包含阶段 2 的邮箱登录闭环、正式产品页面、正文加密与 KMS、私密图片处理、冻结并发写入或永久清除流程。只有已验证的能力计入本轮结果。
 
-远程 CI、仓库保护设置与本机 Docker 镜像运行在实际执行前不标记完成。公开仓库上传涉及此前本地设计资料的公开范围，因此需在可审查提交就绪后确认；本地实现与验证先完成。
+本机 Docker 排障继续暂缓。GitHub Actions 已完成镜像和容器重建验收。
 
 ## 复现入口
 
