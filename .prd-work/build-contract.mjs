@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
-const root = 'E:/桌面文件/开发/梗图';
+import { fileURLToPath } from 'node:url';
+const root = fileURLToPath(new URL('../', import.meta.url));
 const ref = n => ({$ref:`#/components/schemas/${n}`});
 const str = description => ({type:'string', ...(description?{description}:{})});
 const uuid = () => ({type:'string',format:'uuid'});
@@ -99,7 +100,7 @@ mediaRead.responses['200']={description:'图片二进制',headers:{'Cache-Contro
 op('/me/deletion-requests','post','deleteAccount','Deletion','注销账号并提交永久清除',{body:'DeletionRequest',status:202,schema:ref('AccountDeletionAccepted'),idempotent:true,description:'必须先保存近期身份确认时取得的回执。在统一边界撤销会话、冻结相关活动空间并阻止原作者内容继续读取；删除最初创建的梗和附图，保留另一方创建内容。提交后旧会话失效，即使响应丢失也使用事先保存的回执查询本次任务。'});
 op('/deletion-operations/{operationId}','get','getDeletionOperation','Deletion','读取本次清除进度',{schema:ref('DeletionOperation'),security:[{SessionBearer:[]},{DeletionReceipt:[]}],description:'有效登录者只能查自己发起的任务；注销后用秘密回执仅查该任务最小进度，不能凭公开 ID 查询。'});
 
-const spec={openapi:'3.1.1',info:{title:'双人梗簿 API 评审草案',version:'0.1.0-draft',description:'技术建议契约，不是已部署 API。与技术选型与API数据库契约设计_v0.1.md 配套。所有路径默认需有效会话，资源仍逐次授权；待定容量等不得当作无限制。'},servers:[{url:'/api/v1',description:'相对地址；生产域名尚未确定'}],security:[{SessionBearer:[]}],tags:['Auth','Identity','Spaces','Invitations','Entries','Media','Deletion'].map(name=>({name})),paths:P,components:{securitySchemes:{SessionBearer:{type:'http',scheme:'bearer',description:'不透明随机访问令牌；不指定 JWT'},DeletionReceipt:{type:'apiKey',in:'header',name:'Deletion-Receipt',description:'仅对一个账号清除任务有效的秘密回执'}},parameters:params,schemas:S},'x-status':'review-draft','x-pending-decisions':['字段必填及纯图片记录','容量和分页上限','待加入空间发布策略','邀请和票据有效期','注销占位身份展示','物理与备份清除期限'],'x-contract-rules':{privacy:'不在错误、游标、幂等结果、日志中复制私密正文或有效凭据',versioning:'expectedVersion 与 HTTP 409；本稿不同时引入 ETag',deletion:'账号注销清除优先于冻结，按最初作者归属',idempotency:'重试不能在注销后恢复会话或重放已删除正文'}};
+const spec={openapi:'3.1.1',info:{title:'考梗记 API 评审草案',version:'0.1.0-draft',description:'技术建议契约，不是已部署 API。与技术选型与API数据库契约设计_v0.1.md 配套。所有路径默认需有效会话，资源仍逐次授权；待定容量等不得当作无限制。'},servers:[{url:'/api/v1',description:'相对地址；生产域名尚未确定'}],security:[{SessionBearer:[]}],tags:['Auth','Identity','Spaces','Invitations','Entries','Media','Deletion'].map(name=>({name,description:({Auth:"邮箱认证与会话",Identity:"当前账号资料",Spaces:"双人空间",Invitations:"朋友邀请",Entries:"梗记录",Media:"私密图片",Deletion:"永久清除进度"})[name]})),paths:P,components:{securitySchemes:{SessionBearer:{type:'http',scheme:'bearer',description:'不透明随机访问令牌；不指定 JWT'},DeletionReceipt:{type:'apiKey',in:'header',name:'Deletion-Receipt',description:'仅对一个账号清除任务有效的秘密回执'}},parameters:params,schemas:S},'x-status':'review-draft','x-pending-decisions':['字段必填及纯图片记录','容量和分页上限','待加入空间发布策略','邀请和票据有效期','注销占位身份展示','物理与备份清除期限'],'x-contract-rules':{privacy:'不在错误、游标、幂等结果、日志中复制私密正文或有效凭据',versioning:'expectedVersion 与 HTTP 409；本稿不同时引入 ETag',deletion:'账号注销清除优先于冻结，按最初作者归属',idempotency:'重试不能在注销后恢复会话或重放已删除正文'}};
 await fs.mkdir(root+'/contracts',{recursive:true});
 await fs.writeFile(root+'/contracts/openapi.draft.json',JSON.stringify(spec,null,2)+'\n');
 export const result={paths:Object.keys(P).length,operations:Object.values(P).reduce((n,p)=>n+Object.keys(p).length,0),schemas:Object.keys(S).length};

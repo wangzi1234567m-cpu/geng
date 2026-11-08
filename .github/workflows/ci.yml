@@ -1,0 +1,125 @@
+name: Foundation checks
+on:
+  pull_request:
+  push:
+    branches: [main, "codex/**", "feat/**"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  quality:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: "24.14.0"
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run format:check
+      - run: npm audit
+      - run: bash tools/install-quality-linux.sh
+      - run: .tools/quality/linux/actionlint
+      - name: Scan versioned history and candidate source
+        run: |
+          node tools/build-review-snapshot.mjs "$GITHUB_WORKSPACE/.dev/review-snapshots/ci"
+          .tools/quality/linux/gitleaks git . --redact=100 --no-banner
+          .tools/quality/linux/gitleaks dir .dev/review-snapshots/ci --redact=100 --no-banner
+      - run: .tools/quality/linux/osv-scanner scan source -L android/app/gradle.lockfile -L package-lock.json
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      # Disposable runner credentials.
+      GENG_DB_ADMIN_PASSWORD: ci-admin-only
+      GENG_DB_PASSWORD: ci-app-only
+      GENG_MIGRATION_PASSWORD: ci-migrator-only
+      GENG_IT_ADMIN_PASSWORD: ci-admin-only
+      GENG_DB_URL: jdbc:postgresql://127.0.0.1:55432/geng_foundation_it
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "21.0.13+9"
+          cache: maven
+          cache-dependency-path: backend/**/pom.xml
+      - name: Bootstrap roles and dedicated integration DB
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker compose -f deploy/compose.dev.yml up -d --wait postgres
+          docker compose -f deploy/compose.dev.yml exec -T postgres createdb -U geng_admin geng_foundation_it
+          docker compose -f deploy/compose.dev.yml exec -T postgres psql -X -U geng_admin -d geng_foundation_it -v ON_ERROR_STOP=1 <<'SQL'
+          REVOKE ALL ON DATABASE geng_foundation_it FROM PUBLIC;
+          GRANT CONNECT ON DATABASE geng_foundation_it TO geng_app,geng_migrator;
+          GRANT CREATE ON DATABASE geng_foundation_it TO geng_migrator;
+          REVOKE ALL ON SCHEMA public FROM PUBLIC;
+          CREATE SCHEMA ops AUTHORIZATION geng_migrator;
+          SQL
+      - name: Empty DB migration and idempotent re-run
+        working-directory: backend
+        run: |
+          sh ./mvnw -B -ntp -N flyway:migrate
+          sh ./mvnw -B -ntp -N flyway:migrate flyway:validate
+      - run: sh ./mvnw -B -ntp -Ppostgres-it,sbom verify
+        working-directory: backend
+      - run: bash tools/install-quality-linux.sh
+      - run: .tools/quality/linux/osv-scanner scan source -L backend/target/classes/META-INF/sbom/application.cdx.json
+      - name: Verify container rebuild and database volume
+        shell: bash
+        run: |
+          set -euo pipefail
+          compose=(docker compose -f deploy/compose.dev.yml --profile app)
+          trap '"${compose[@]}" down' EXIT
+          GENG_DB_URL=jdbc:postgresql://127.0.0.1:55432/geng_dev sh backend/mvnw -B -ntp -f backend/pom.xml -N flyway:migrate
+          "${compose[@]}" up -d --build --wait backend
+          curl --fail --retry 12 --retry-delay 2 --retry-all-errors --silent --show-error http://127.0.0.1:8080/actuator/health | jq -e '.status == "UP"'
+          previous_id=$("${compose[@]}" ps -q postgres)
+          "${compose[@]}" up -d --force-recreate --wait postgres
+          test "$previous_id" != "$("${compose[@]}" ps -q postgres)"
+          version=$("${compose[@]}" exec -T postgres psql -X -U geng_admin -d geng_dev -Atc 'SELECT max(version) FROM ops.flyway_schema_history WHERE success')
+          test "$version" = "2"
+          curl --fail --retry 12 --retry-delay 2 --retry-all-errors --silent --show-error http://127.0.0.1:8080/actuator/health | jq -e '.status == "UP"'
+  android:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "21.0.13+9"
+      - name: Install fixed SDK packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk="$RUNNER_TEMP/geng-android-sdk"
+          archive="$RUNNER_TEMP/geng-android-tools.zip"
+          curl --fail --silent --show-error --location https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip -o "$archive"
+          echo "5fdcc763663eefb86a5b8879697aa6088b041e70  $archive" | sha1sum --check
+          mkdir -p "$sdk/cmdline-tools"
+          unzip -q "$archive" -d "$sdk/cmdline-tools"
+          mv "$sdk/cmdline-tools/cmdline-tools" "$sdk/cmdline-tools/19.0"
+          manager="$sdk/cmdline-tools/19.0/bin/sdkmanager"
+          # sdkmanager closes stdin after the final prompt, which can SIGPIPE yes.
+          set +o pipefail
+          yes | "$manager" --sdk_root="$sdk" --licenses > /dev/null
+          set -o pipefail
+          "$manager" --sdk_root="$sdk" 'platforms;android-36' 'build-tools;35.0.0'
+          echo "ANDROID_HOME=$sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$sdk" >> "$GITHUB_ENV"
+      - run: sh ./gradlew --no-daemon testDebugUnitTest assembleDebug lintDebug
+        working-directory: android

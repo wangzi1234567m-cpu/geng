@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Development icon only; final product branding is not decided by this asset. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp" android:height="48dp"
+    android:viewportWidth="48" android:viewportHeight="48">
+    <path android:fillColor="#527443" android:pathData="M8,4 L40,4 Q44,4 44,8 L44,34 Q44,38 40,38 L24,38 L12,45 L12,38 L8,38 Q4,38 4,34 L4,8 Q4,4 8,4 Z" />
+    <path android:fillColor="#FFF8E8" android:pathData="M13,14 L22,14 L22,23 L18,29 L13,29 L17,23 L13,23 Z M27,14 L36,14 L36,23 L32,29 L27,29 L31,23 L27,23 Z" />
+</vector>
