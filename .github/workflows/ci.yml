@@ -37,20 +37,9 @@ jobs:
   backend:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
-    services:
-      postgres:
-        image: postgres:17.11@sha256:748a18a54d3842d43bc156f0840d78029b8d349e0feca98c12b9c4ce3404a6b3
-        env:
-          POSTGRES_DB: geng_dev
-          POSTGRES_USER: geng_admin
-          # Disposable CI-only database; these values are never production secrets.
-          POSTGRES_PASSWORD: ci-admin-only
-        ports: ["127.0.0.1:55432:5432"]
-        options: >-
-          --health-cmd 'pg_isready -U geng_admin -d geng_dev'
-          --health-interval 5s --health-timeout 3s --health-retries 20
     env:
-      PGPASSWORD: ci-admin-only
+      # Disposable runner credentials.
+      GENG_DB_ADMIN_PASSWORD: ci-admin-only
       GENG_DB_PASSWORD: ci-app-only
       GENG_MIGRATION_PASSWORD: ci-migrator-only
       GENG_IT_ADMIN_PASSWORD: ci-admin-only
@@ -69,9 +58,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          psql -X -h 127.0.0.1 -p 55432 -U geng_admin -d geng_dev -v ON_ERROR_STOP=1 --set=app_password="$GENG_DB_PASSWORD" --set=migration_password="$GENG_MIGRATION_PASSWORD" -f deploy/postgres/bootstrap.sql
-          createdb -h 127.0.0.1 -p 55432 -U geng_admin geng_foundation_it
-          psql -X -h 127.0.0.1 -p 55432 -U geng_admin -d geng_foundation_it -v ON_ERROR_STOP=1 <<'SQL'
+          docker compose -f deploy/compose.dev.yml up -d --wait postgres
+          docker compose -f deploy/compose.dev.yml exec -T postgres createdb -U geng_admin geng_foundation_it
+          docker compose -f deploy/compose.dev.yml exec -T postgres psql -X -U geng_admin -d geng_foundation_it -v ON_ERROR_STOP=1 <<'SQL'
           REVOKE ALL ON DATABASE geng_foundation_it FROM PUBLIC;
           GRANT CONNECT ON DATABASE geng_foundation_it TO geng_app,geng_migrator;
           GRANT CREATE ON DATABASE geng_foundation_it TO geng_migrator;
@@ -87,8 +76,21 @@ jobs:
         working-directory: backend
       - run: bash tools/install-quality-linux.sh
       - run: .tools/quality/linux/osv-scanner scan source -L backend/target/classes/META-INF/sbom/application.cdx.json
-      - name: Build application container without local secrets
-        run: docker build --tag geng-foundation:ci backend
+      - name: Verify container rebuild and database volume
+        shell: bash
+        run: |
+          set -euo pipefail
+          compose=(docker compose -f deploy/compose.dev.yml --profile app)
+          trap '"${compose[@]}" down' EXIT
+          GENG_DB_URL=jdbc:postgresql://127.0.0.1:55432/geng_dev sh backend/mvnw -B -ntp -f backend/pom.xml -N flyway:migrate
+          "${compose[@]}" up -d --build --wait backend
+          curl --fail --retry 12 --retry-delay 2 --retry-all-errors --silent --show-error http://127.0.0.1:8080/actuator/health | jq -e '.status == "UP"'
+          previous_id=$("${compose[@]}" ps -q postgres)
+          "${compose[@]}" up -d --force-recreate --wait postgres
+          test "$previous_id" != "$("${compose[@]}" ps -q postgres)"
+          version=$("${compose[@]}" exec -T postgres psql -X -U geng_admin -d geng_dev -Atc 'SELECT max(version) FROM ops.flyway_schema_history WHERE success')
+          test "$version" = "2"
+          curl --fail --retry 12 --retry-delay 2 --retry-all-errors --silent --show-error http://127.0.0.1:8080/actuator/health | jq -e '.status == "UP"'
   android:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -101,6 +103,22 @@ jobs:
           distribution: temurin
           java-version: "21.0.13+9"
       - name: Install fixed SDK packages
-        run: sdkmanager 'platforms;android-36' 'build-tools;35.0.0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk="$RUNNER_TEMP/geng-android-sdk"
+          archive="$RUNNER_TEMP/geng-android-tools.zip"
+          curl --fail --silent --show-error --location https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip -o "$archive"
+          echo "5fdcc763663eefb86a5b8879697aa6088b041e70  $archive" | sha1sum --check
+          unzip -q "$archive" -d "$sdk/cmdline-tools"
+          mv "$sdk/cmdline-tools/cmdline-tools" "$sdk/cmdline-tools/19.0"
+          manager="$sdk/cmdline-tools/19.0/bin/sdkmanager"
+          # sdkmanager closes stdin after the final prompt, which can SIGPIPE yes.
+          set +o pipefail
+          yes | "$manager" --sdk_root="$sdk" --licenses > /dev/null
+          set -o pipefail
+          "$manager" --sdk_root="$sdk" 'platforms;android-36' 'build-tools;35.0.0'
+          echo "ANDROID_HOME=$sdk" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$sdk" >> "$GITHUB_ENV"
       - run: sh ./gradlew --no-daemon testDebugUnitTest assembleDebug lintDebug
         working-directory: android
