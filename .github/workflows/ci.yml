@@ -110,6 +110,7 @@ jobs:
           archive="$RUNNER_TEMP/geng-android-tools.zip"
           curl --fail --silent --show-error --location https://dl.google.com/android/repository/commandlinetools-linux-13114758_latest.zip -o "$archive"
           echo "5fdcc763663eefb86a5b8879697aa6088b041e70  $archive" | sha1sum --check
+          mkdir -p "$sdk/cmdline-tools"
           unzip -q "$archive" -d "$sdk/cmdline-tools"
           mv "$sdk/cmdline-tools/cmdline-tools" "$sdk/cmdline-tools/19.0"
           manager="$sdk/cmdline-tools/19.0/bin/sdkmanager"
